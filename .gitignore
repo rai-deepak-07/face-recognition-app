@@ -1,0 +1,28 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+db.sqlite3
+
+# Environment
+.env
+
+# Node
+node_modules/
+
+# VS Code
+.vscode/
+
+# Build
+dist/
+build/
+
+# Media
+media/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
