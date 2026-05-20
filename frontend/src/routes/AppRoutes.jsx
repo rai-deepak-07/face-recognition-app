@@ -4,35 +4,47 @@ import Register from "../pages/Register";
 import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
 
+import Navbar from "../components/Navbar";
 import ProtectedRoute from "./ProtectedRoute";
+import AlbumDetails from "../pages/AlbumDetails";
 
 function AppRoutes() {
-  return (
-    <BrowserRouter>
-      <Routes>
+    return (
+        <BrowserRouter>
+             <Navbar />
+            <Routes>
 
-        <Route
-          path="/register"
-          element={<Register />}
-        />
+                <Route
+                    path="/register"
+                    element={<Register />}
+                />
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+                <Route
+                    path="/login"
+                    element={<Login />}
+                />
 
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+                <Route
+                    path="/dashboard"
+                    element={
+                        <ProtectedRoute>
+                            <Dashboard />
+                        </ProtectedRoute>
+                    }
+                />
 
-      </Routes>
-    </BrowserRouter>
-  );
+                <Route
+                    path="/albums/:id"
+                    element={
+                        <ProtectedRoute>
+                            <AlbumDetails />
+                        </ProtectedRoute>
+                    }
+                />
+
+            </Routes>
+        </BrowserRouter>
+    );
 }
 
 export default AppRoutes;

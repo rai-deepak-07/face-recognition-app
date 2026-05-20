@@ -1,3 +1,22 @@
 from django.db import models
+from albums.models import Album
 
-# Create your models here.
+
+class Image(models.Model):
+
+    album = models.ForeignKey(
+        Album,
+        on_delete=models.CASCADE,
+        related_name='images'
+    )
+
+    image = models.ImageField(
+        upload_to='albums/'
+    )
+
+    uploaded_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    def __str__(self):
+        return f"Image {self.id}"
