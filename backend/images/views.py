@@ -1,27 +1,55 @@
 from rest_framework import generics
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import PermissionDenied
+
+from rest_framework.permissions import (
+    IsAuthenticated
+)
+
+from rest_framework.exceptions import (
+    PermissionDenied
+)
+
+from rest_framework.response import (
+    Response
+)
+
+from rest_framework import status
 
 from albums.models import Album
 
 from .models import Image
+
 from .serializers import ImageSerializer
 
+from recognition.services.face_service import (
+    process_image_faces
+)
 
-class ImageUploadView(generics.CreateAPIView):
+
+class ImageUploadView(
+    generics.CreateAPIView
+):
 
     serializer_class = ImageSerializer
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated
+    ]
 
-    def perform_create(self, serializer):
+    def perform_create(
+        self,
+        serializer
+    ):
 
-        album_id = self.kwargs['album_id']
+        album_id = self.kwargs[
+            "album_id"
+        ]
 
         try:
 
             album = Album.objects.get(
+
                 id=album_id,
+
                 user=self.request.user
             )
 
@@ -31,30 +59,79 @@ class ImageUploadView(generics.CreateAPIView):
                 "Album not found"
             )
 
-        serializer.save(album=album)
+        image = serializer.save(
+            album=album
+        )
 
+        face_count = process_image_faces(
+            image
+        )
 
+        self._face_count = face_count
+
+    def create(
+        self,
+        request,
+        *args,
+        **kwargs
+    ):
+
+        serializer = self.get_serializer(
+            data=request.data
+        )
+
+        serializer.is_valid(
+            raise_exception=True
+        )
+
+        self.perform_create(
+            serializer
+        )
+
+        data = serializer.data
+
+        data["face_count"] = getattr(
+            self,
+            "_face_count",
+            0
+        )
+
+        return Response(
+            data,
+            status=status.HTTP_201_CREATED
+        )
 class AlbumImagesView(generics.ListAPIView):
 
     serializer_class = ImageSerializer
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated
+    ]
 
     def get_queryset(self):
 
-        album_id = self.kwargs['album_id']
+        album_id = self.kwargs[
+            "album_id"
+        ]
 
         return Image.objects.filter(
-            album__id=album_id,
-            album__user=self.request.user
-        )
-        
 
-class ImageDeleteView(generics.DestroyAPIView):
+            album__id=album_id,
+
+            album__user=self.request.user
+
+        ).order_by("-id")
+
+
+class ImageDeleteView(
+    generics.DestroyAPIView
+):
 
     serializer_class = ImageSerializer
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [
+        IsAuthenticated
+    ]
 
     def get_queryset(self):
 

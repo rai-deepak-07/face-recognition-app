@@ -15,7 +15,8 @@ urlpatterns = [
     path('api/users/', include('users.urls')),
     path('api/albums/', include('albums.urls')),
     path('api/images/', include('images.urls')),
-
+    path('api/sharing/', include('sharing.urls')),
+    
     path('api/token/', TokenObtainPairView.as_view()),
     path('api/token/refresh/', TokenRefreshView.as_view()),
 ]

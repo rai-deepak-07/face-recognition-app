@@ -1,4 +1,5 @@
 from django.db import models
+
 from albums.models import Album
 
 
@@ -12,6 +13,10 @@ class Image(models.Model):
 
     image = models.ImageField(
         upload_to='albums/'
+    )
+
+    face_count = models.IntegerField(
+        default=0
     )
 
     uploaded_at = models.DateTimeField(

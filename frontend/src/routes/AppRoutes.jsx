@@ -8,10 +8,12 @@ import Navbar from "../components/Navbar";
 import ProtectedRoute from "./ProtectedRoute";
 import AlbumDetails from "../pages/AlbumDetails";
 
+import SharePage from "../pages/SharePage";
+
 function AppRoutes() {
     return (
         <BrowserRouter>
-             <Navbar />
+            <Navbar />
             <Routes>
 
                 <Route
@@ -22,6 +24,11 @@ function AppRoutes() {
                 <Route
                     path="/login"
                     element={<Login />}
+                />
+
+                <Route
+                    path="/share/:token"
+                    element={<SharePage />}
                 />
 
                 <Route
