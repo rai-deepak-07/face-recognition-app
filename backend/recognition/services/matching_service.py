@@ -156,7 +156,7 @@ def match_face(selfie_path, album):
 
         # TOP 3 BEST MATCHES
         for image_id, data in (
-            sorted_matches[:3]
+            sorted_matches[:]
         ):
 
             results.append({
