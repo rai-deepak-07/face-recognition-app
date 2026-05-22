@@ -10,8 +10,10 @@ from recognition.models import (
     FaceEmbedding
 )
 
+# STRICTER THRESHOLDS
+DISTANCE_THRESHOLD = 0.59
 
-DISTANCE_THRESHOLD = 0.75
+MIN_CONFIDENCE = 38
 
 
 def match_face(selfie_path, album):
@@ -36,16 +38,34 @@ def match_face(selfie_path, album):
 
             return []
 
-        face = detections[0]
+        # TAKE LARGEST FACE ONLY
+        largest_face = max(
 
-        facial_area = face['facial_area']
+            detections,
+
+            key=lambda face:
+            face['facial_area']['w']
+            *
+            face['facial_area']['h']
+        )
+
+        facial_area = largest_face[
+            'facial_area'
+        ]
 
         x = facial_area['x']
         y = facial_area['y']
         w = facial_area['w']
         h = facial_area['h']
 
-        # OPEN SELFIE IMAGE
+        # IGNORE SMALL/BLURRY FACE
+        if w < 60 or h < 60:
+
+            print("FACE TOO SMALL")
+
+            return []
+
+        # OPEN SELFIE
         original = Image.open(
             selfie_path
         ).convert("RGB")
@@ -55,7 +75,12 @@ def match_face(selfie_path, album):
             (x, y, x + w, y + h)
         )
 
-        # SAVE TEMP CROPPED FACE
+        # IMPROVE MATCH QUALITY
+        cropped = cropped.resize(
+            (320, 320)
+        )
+
+        # SAVE TEMP FACE
         with tempfile.NamedTemporaryFile(
 
             delete=False,
@@ -65,20 +90,26 @@ def match_face(selfie_path, album):
         ) as temp_face:
 
             cropped.save(
+
                 temp_face.name,
-                format="JPEG"
+
+                format="JPEG",
+
+                quality=95
             )
 
             temp_face_path = (
                 temp_face.name
             )
 
-        # GENERATE SELFIE EMBEDDING
+        # SELFIE EMBEDDING
         selfie_data = DeepFace.represent(
 
             img_path=temp_face_path,
 
             model_name='ArcFace',
+
+            detector_backend='skip',
 
             enforce_detection=False
         )
@@ -95,69 +126,99 @@ def match_face(selfie_path, album):
 
         for item in embeddings:
 
-            stored_embedding = item.embedding
+            try:
 
-            distance = cosine(
+                stored_embedding = (
+                    item.embedding
+                )
 
-                selfie_embedding,
+                distance = cosine(
 
-                stored_embedding
-            )
+                    selfie_embedding,
 
-            print(
-                "IMAGE:",
-                item.face.image.id,
-                "DISTANCE:",
-                distance
-            )
-
-            # LOWER DISTANCE = BETTER
-            if distance < DISTANCE_THRESHOLD:
+                    stored_embedding
+                )
 
                 confidence = round(
                     (1 - distance) * 100,
                     2
                 )
 
-                current = image_scores.get(
-                    item.face.image.id
+                print(
+
+                    "IMAGE:",
+
+                    item.face.image.id,
+
+                    "DISTANCE:",
+
+                    distance,
+
+                    "CONFIDENCE:",
+
+                    confidence
                 )
 
-                # KEEP BEST MATCH ONLY
+                # STRICT FILTER
                 if (
-                    current is None
-                    or confidence > current['confidence']
+                    distance < DISTANCE_THRESHOLD
+                    and
+                    confidence > MIN_CONFIDENCE
                 ):
 
-                    image_scores[
+                    current = image_scores.get(
                         item.face.image.id
-                    ] = {
+                    )
 
-                        "face_id":
-                        item.face.id,
+                    # KEEP BEST MATCH
+                    if (
 
-                        "confidence":
-                        confidence
-                    }
+                        current is None
 
-        # SORT BEST MATCHES
+                        or
+
+                        confidence >
+                        current['confidence']
+                    ):
+
+                        image_scores[
+                            item.face.image.id
+                        ] = {
+
+                            "face_id":
+                            item.face.id,
+
+                            "confidence":
+                            confidence
+                        }
+
+            except Exception as inner_error:
+
+                print(
+                    "EMBEDDING ERROR:",
+                    inner_error
+                )
+
+                continue
+
+        # SORT BEST FIRST
         sorted_matches = sorted(
 
             image_scores.items(),
 
-            key=lambda x: x[1][
-                'confidence'
-            ],
+            key=lambda x:
+            x[1]['confidence'],
 
             reverse=True
         )
 
         results = []
 
-        # TOP 3 BEST MATCHES
+        # RETURN ONLY STRONG MATCHES
         for image_id, data in (
-            sorted_matches[:]
+            sorted_matches
         ):
+
 
             results.append({
 

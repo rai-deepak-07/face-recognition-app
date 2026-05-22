@@ -4,6 +4,9 @@ import { Link } from "react-router-dom";
 export default function FaceFetchLanding() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  
+  // Modal toggle states
+  const [activeModal, setActiveModal] = useState(null); // 'privacy' | 'terms' | null
 
   useEffect(() => {
     // 1. Navbar style mutate tracking listener
@@ -54,6 +57,16 @@ export default function FaceFetchLanding() {
       });
     }
   };
+
+  // Prevent background scrolling when modal is open
+  useEffect(() => {
+    if (activeModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => { document.body.style.overflow = "unset"; };
+  }, [activeModal]);
 
   return (
     <div className="bg-zinc-950 text-zinc-100 min-h-screen font-sans antialiased selection:bg-violet-500/30 selection:text-violet-200 scroll-smooth relative">
@@ -112,7 +125,7 @@ export default function FaceFetchLanding() {
             <a href="#developer" onClick={(e) => handleSmoothScroll(e, "developer")} className="text-zinc-300 font-medium">Developer</a>
             <hr className="border-zinc-800 my-1" />
             <div className="flex flex-col gap-3">
-              <Link to="/login" className="w-full text-center py-3 text-zinc-300 font-medium border border-zinc-800 roundedLink">
+              <Link to="/login" className="w-full text-center py-3 text-zinc-300 font-medium border border-zinc-800 rounded">
                 Login
               </Link>
               <Link to="/register" className="w-full text-center py-3 bg-gradient-to-r from-violet-500 to-blue-600 font-bold text-white rounded-xl">
@@ -263,7 +276,7 @@ export default function FaceFetchLanding() {
               <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mb-4 text-cyan-400">
                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316" /></svg>
               </div>
-              <h3 className="text-sm font-bold text-zinc-100 mb-2">Smart Album Sharing</h3>
+              <span className="text-sm font-bold text-zinc-100 mb-2">Smart Album Sharing</span>
               <p className="text-xs text-zinc-500 leading-relaxed">One structured cryptographic web access link rules the workspace.</p>
             </div>
           </div>
@@ -485,7 +498,7 @@ export default function FaceFetchLanding() {
             <p className="text-xs font-semibold text-violet-400 mt-1">Full Stack Developer | AI Enthusiast</p>
             
             <p className="text-zinc-400 text-xs sm:text-sm leading-relaxed mt-4 font-normal">
-              Passionate about building AI-powered real-world solutions that simplify digital experiences. Focused on optimizing biometric matching loops and scalable database infrastructure layout nodes.
+              On-boarded with building AI-powered real-world solutions that simplify digital experiences. Focused on optimizing biometric matching loops and scalable database infrastructure layout nodes.
             </p>
 
             <div className="flex flex-wrap gap-1.5 mt-4 justify-center sm:justify-start">
@@ -546,7 +559,7 @@ export default function FaceFetchLanding() {
               <span className="text-base font-black tracking-tight text-white">FaceFetch</span>
             </div>
             <p className="text-xs text-zinc-500 max-w-sm leading-relaxed">
-              Biometric image delivery pipeline built for fast automation. Streamlining event photoretrieval systems transparently via machine learning.
+              Biometric image delivery pipeline built for fast automation. Streamlining event retrieval systems transparently via machine learning.
             </p>
           </div>
 
@@ -562,9 +575,10 @@ export default function FaceFetchLanding() {
           <div className="md:col-span-4 flex flex-col gap-3">
             <h4 className="text-xs font-bold tracking-wider text-zinc-300 uppercase">Legal &amp; Support</h4>
             <div className="flex flex-col gap-2 text-xs text-zinc-500">
-              <span className="hover:text-zinc-300 transition-colors cursor-pointer">Privacy Policy</span>
-              <span className="hover:text-zinc-300 transition-colors cursor-pointer">Terms</span>
-              <span className="hover:text-zinc-300 transition-colors cursor-pointer">contact@facefetch.ai</span>
+              {/* INTERCEPTED LINK TRIPPERS FOR THE REDESIGNED LEGAL MODALS */}
+              <button onClick={() => setActiveModal("privacy")} className="hover:text-zinc-300 transition-colors cursor-pointer text-left w-fit">Privacy Policy</button>
+              <button onClick={() => setActiveModal("terms")} className="hover:text-zinc-300 transition-colors cursor-pointer text-left w-fit">Terms &amp; Conditions</button>
+              <span className="hover:text-zinc-300 transition-colors cursor-pointer">support@facefetch.ai</span>
             </div>
           </div>
         </div>
@@ -578,6 +592,172 @@ export default function FaceFetchLanding() {
         </div>
       </footer>
 
+      {/* ---------------- LEGAL DATA CONTENT POPUP MODAL WRAPPERS ---------------- */}
+      {activeModal && (
+        <div 
+          className="fixed inset-0 z-[100] bg-zinc-950/80 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+          onClick={() => setActiveModal(null)}
+        >
+          <div 
+            className="w-full max-w-3xl rounded-3xl border border-zinc-800 bg-zinc-900 shadow-2xl overflow-hidden flex flex-col max-h-[85vh] backdrop-blur-xl animate-in zoom-in-95 duration-150"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* MODAL FRAME HEADER PANEL */}
+            <div className="border-b border-zinc-800/80 p-5 sm:p-6 bg-zinc-950/40 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-black text-white tracking-tight">
+                  {activeModal === "privacy" ? "Privacy Policy" : "Terms and Conditions"}
+                </h2>
+                <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[10px] font-mono font-bold text-zinc-400 uppercase mt-1.5 tracking-wider">
+                  Effective Date: May 2026
+                </div>
+              </div>
+              <button 
+                onClick={() => setActiveModal(null)}
+                className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white border border-zinc-700/50 transition-all active:scale-90"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* MODAL CONDITIONAL SYSTEM TEXT FEEDSPACE */}
+            <div className="p-6 overflow-y-auto text-sm text-zinc-300 font-normal leading-relaxed space-y-6 scrollbar-thin [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-zinc-800 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-zinc-700">
+              {activeModal === "privacy" ? (
+                <>
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">1. Introduction</h3>
+                    <p className="text-zinc-400">Welcome to FaceFetch (“we”, “our”, “us”). FaceFetch is an AI-powered photo discovery platform that allows users to upload event photos and find their own images using facial recognition technology. Your privacy and data security are important to us. This Privacy Policy explains how we collect, use, process, store, and protect your information while using our platform. By using FaceFetch, you agree to the practices described in this policy.</p>
+                  </section>
+
+                  <section className="space-y-3">
+                    <h3 className="text-zinc-100 font-bold text-base">2. Information We Collect</h3>
+                    <div className="space-y-2 text-zinc-400">
+                      <p><strong className="text-zinc-200">A. Account Information:</strong> When you create an account, we may collect your name, email address, password (encrypted), and account creation context details.</p>
+                      <p><strong className="text-zinc-200">B. Uploaded Images:</strong> When users upload albums or photos, we collect the raw media file objects, metadata logs, and mathematical face embeddings derived from isolated targets.</p>
+                      <p><strong className="text-zinc-200">C. Selfie Verification Images:</strong> When querying matching index buffers, we temporarily access streaming camera snapshots solely for identification lookup pipelines.</p>
+                      <p><strong className="text-zinc-200">D. Technical Analytics:</strong> Device footprints, browser structures, tracking IP nodes, configuration types, and general usage pattern arrays.</p>
+                    </div>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">3. How Facial Recognition Works</h3>
+                    <p className="text-zinc-400">FaceFetch processes targeted files with cluster engines. The pipeline handles feature tracking, generates numeric structural representations (embeddings), and processes comparisons. We do NOT run raw identity checks or bind datasets to government reference files.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">4. How We Use Your Information</h3>
+                    <p className="text-zinc-400">To maintain micro-second database cluster sync operations, prevent fraudulent directory scraping loops, isolate structural engine bugs, and keep infrastructure node routes optimized.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">5. Selfie Data Handling</h3>
+                    <p className="text-zinc-400">Verification selfie captures stay ephemeral. They never map to public routes, bypass third-party sharing interfaces completely, and clear cleanly once structural loop comparisons expire.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">6. Data Storage &amp; Security</h3>
+                    <p className="text-zinc-400">We shield architecture points with JWT tokens, isolated profile containers, and database wrappers. However, no digital transmission layout holds absolute security assurances.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">7. Sharing of Information</h3>
+                    <p className="text-zinc-400">We do NOT sell user tracking metrics. Information assets cross operations only under legal compliance calls, system safety threats, or inside hosting framework providers verified for operation maintenance.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">8. Public Share Links</h3>
+                    <p className="text-zinc-400">Generated keys pass visibility privileges down to any guest holder. They can run selfie lookups across connected files. Asset safety management rests with administrative link creators.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">9. Data Retention &amp; Rights</h3>
+                    <p className="text-zinc-400">We hold file matrices to fuel system pipeline routines. Users can invoke data access, modification, or entire profile purging operations directly by notifying platform administrators.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">10. Children's Privacy &amp; Responsibility</h3>
+                    <p className="text-zinc-400">FaceFetch bars profile creation under 13 years of age. Users are bound to import files containing explicit processing permissions only. All matching processes work on probabilistic metrics, meaning results hold personal reference values instead of judicial authority.</p>
+                  </section>
+
+                  <div className="border-t border-zinc-800/60 pt-4 text-xs text-zinc-500 flex justify-between">
+                    <span>Contact: support@facefetch.ai</span>
+                    <span>System Node: Global Privacy V2</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">1. Acceptance of Terms</h3>
+                    <p className="text-zinc-400">By accessing or using FaceFetch, you agree to comply with these Terms and Conditions. If you do not agree, you must not use the platform.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">2. Description of Service</h3>
+                    <p className="text-zinc-400">FaceFetch provides AI-powered photo organization, facial recognition-based photo discovery, album sharing functionality, and image matching services.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">3. User Accounts</h3>
+                    <p className="text-zinc-400">Users are responsible for maintaining account confidentiality, securing login credentials, and all activities under their account. You must provide accurate registration information.</p>
+                  </section>
+
+                  <section className="space-y-3">
+                    <h3 className="text-zinc-100 font-bold text-base">4. Acceptable Use</h3>
+                    <p className="text-zinc-400">Users agree NOT to upload illegal or harmful content, violate privacy rights, use the platform for surveillance, attempt unauthorized system access, abuse facial recognition features, or upload malicious files or malware.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">5. Facial Recognition Disclaimer</h3>
+                    <p className="text-zinc-400">FaceFetch provides AI-generated matching results based on similarity analysis. We do not guarantee 100% recognition accuracy, identity verification, or legal/forensic reliability. Results are intended only for personal photo discovery.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">6. Intellectual Property</h3>
+                    <p className="text-zinc-400">All platform components including software, branding, UI, algorithms, and designs remain the intellectual property of FaceFetch. Users retain ownership of uploaded images.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">7. User Content &amp; Shared Links</h3>
+                    <p className="text-zinc-400">Users are solely responsible for uploaded content, confirming ownership rights or authorizations. Users are responsible for managing shared links and preventing unauthorized sharing.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">8. Data Processing Consent</h3>
+                    <p className="text-zinc-400">By using facial matching features, users consent to temporary image processing, AI-based facial analysis, embedding generation, and similarity comparison loops.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">9. Limitation of Liability</h3>
+                    <p className="text-zinc-400">FaceFetch shall not be liable for incorrect matches, missed matches, data loss, service interruptions, unauthorized access, or indirect damages. Use of the platform is at your own risk.</p>
+                  </section>
+
+                  <section className="space-y-2">
+                    <h3 className="text-zinc-100 font-bold text-base">10. Termination &amp; Changes</h3>
+                    <p className="text-zinc-400">We reserve the right to suspend accounts or terminate access for violations. We may update these terms periodically; continued usage constitutes full acceptance of revised terms.</p>
+                  </section>
+
+                  <div className="border-t border-zinc-800/60 pt-4 text-xs text-zinc-500 flex justify-between">
+                    <span>Inquiries: support@facefetch.ai</span>
+                    <span>System Node: Architecture Terms v1.2</span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* ACTION FOOTER */}
+            <div className="border-t border-zinc-800/80 p-4 bg-zinc-950/20 flex justify-end">
+              <button 
+                onClick={() => setActiveModal(null)}
+                className="px-5 py-2 rounded-xl bg-zinc-100 hover:bg-white text-zinc-950 font-bold text-xs uppercase tracking-wider transition-colors active:scale-[0.98]"
+              >
+                Acknowledge
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

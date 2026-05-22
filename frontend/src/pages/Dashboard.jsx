@@ -10,7 +10,11 @@ function Dashboard() {
     const [albums, setAlbums] = useState([]);
     const [title, setTitle] = useState("");
 
-    // FETCH ALBUMS
+    // --- NEW: MODAL/ALERT STATE ---
+    // Stores the full album object when delete is clicked, or null when closed
+    const [albumToDelete, setAlbumToDelete] = useState(null); 
+
+    // --- FETCH ALBUMS ---
     const fetchAlbums = async () => {
         try {
             const response = await api.get("albums/");
@@ -24,7 +28,7 @@ function Dashboard() {
         fetchAlbums();
     }, []);
 
-    // CREATE ALBUM
+    // --- CREATE ALBUM ---
     const createAlbum = async () => {
         if (!title.trim()) {
             return errorToast("Album title required");
@@ -42,13 +46,20 @@ function Dashboard() {
         }
     };
 
-    // DELETE ALBUM
-    const deleteAlbum = async (id) => {
+    // --- NEW: CONFIRMED DELETE HANDLER ---
+    const handleConfirmDelete = async () => {
+        if (!albumToDelete) return;
+
         try {
-            await api.delete(`albums/${id}/delete/`);
+            await api.delete(`albums/${albumToDelete.id}/delete/`);
+            successToast(`Deleted "${albumToDelete.title}"`);
             fetchAlbums();
         } catch (error) {
             console.log(error);
+            errorToast("Failed to delete album");
+        } finally {
+            // Always close the modal
+            setAlbumToDelete(null); 
         }
     };
 
@@ -61,29 +72,22 @@ function Dashboard() {
 
             link = `${import.meta.env.VITE_FRONTEND_URL}/share/${token}`;
 
-            // Check if the browser supports mobile-native sharing
             if (navigator.share) {
                 await navigator.share({
                     title: 'FaceFetch Album Access',
-                    text: `Scan your face to see all your matching photos from this collection instantly!`,
+                    text: `Scan your face to see all your matching photos instantly!`,
                     url: link,
                 });
                 successToast("Share menu opened");
             } else {
-                // Desktop fallback: copy to clipboard
                 await navigator.clipboard.writeText(link);
                 successToast("Share link copied");
             }
 
         } catch (error) {
             console.log(error);
+            if (error.name === "AbortError") return;
 
-            // Ignore standard user cancellations of the native share sheet menu
-            if (error.name === "AbortError") {
-                return;
-            }
-
-            // Secondary fallback copy method for legacy configurations
             if (link) {
                 const textArea = document.createElement("textarea");
                 textArea.value = link;
@@ -98,6 +102,53 @@ function Dashboard() {
 
     return (
         <div className="min-h-screen bg-zinc-950 text-zinc-100 antialiased selection:bg-violet-500/30 selection:text-violet-200 relative">
+
+            {/* --- NEW: PROFESSIONAL DELETE CONFIRMATION MODAL --- */}
+            {albumToDelete && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    {/* Backdrop */}
+                    <div 
+                        className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+                        onClick={() => setAlbumToDelete(null)} // Close on backdrop click
+                    />
+                    
+                    {/* Modal Content */}
+                    <div className="relative w-full max-w-md rounded-3xl border border-zinc-800 bg-zinc-900 p-8 shadow-2xl shadow-black animate-in zoom-in-95 duration-300 ease-out">
+                        <div className="flex items-center gap-4 mb-6 border-b border-zinc-800 pb-6">
+                            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400">
+                                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-white">Delete Collection</h3>
+                                <p className="text-xs text-zinc-500 font-semibold tracking-widest uppercase mt-0.5">
+                                    ID: {albumToDelete.id}
+                                </p>
+                            </div>
+                        </div>
+
+                        <p className="text-sm text-zinc-300 mb-8 leading-relaxed">
+                            Are you absolutely sure you want to delete <span className="font-semibold text-white">"{albumToDelete.title}"</span>? This action is permanent and will remove all associated photo links from this collection.
+                        </p>
+
+                        <div className="flex flex-col sm:flex-row gap-3">
+                            <button
+                                onClick={() => setAlbumToDelete(null)}
+                                className="flex-1 rounded-xl bg-zinc-800 hover:bg-zinc-700 py-3 text-center text-sm font-semibold text-zinc-300 transition-all active:scale-[0.98]"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmDelete}
+                                className="flex-1 rounded-xl bg-red-600 hover:bg-red-500 py-3 text-center text-sm font-bold text-white transition-all active:scale-[0.98] shadow-lg shadow-red-950/30"
+                            >
+                                Delete Permanently
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* COMPACT TOP BACKGROUND LIGHTS */}
             <div className="absolute top-0 right-1/4 w-[300px] sm:w-[500px] aspect-square bg-violet-600/5 rounded-full blur-[100px] pointer-events-none z-0" />
@@ -145,9 +196,10 @@ function Dashboard() {
                             key={album.id}
                             className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-zinc-900 bg-gradient-to-b from-zinc-900/30 to-zinc-900/5 p-6 transition-all duration-300 hover:border-violet-500/30 hover:from-zinc-900/50 hover:-translate-y-0.5 shadow-xl shadow-black/40"
                         >
-                            {/* Floating Delete Button with clean micro-interaction design */}
+                            {/* Floating Delete Button */}
                             <button
-                                onClick={() => deleteAlbum(album.id)}
+                                // --- CHANGED: Open the modal instead of native alert ---
+                                onClick={() => setAlbumToDelete(album)}
                                 className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 max-lg:opacity-100 rounded-xl bg-zinc-950 border border-zinc-900 p-2.5 text-zinc-500 transition-all duration-200 hover:border-red-500/30 hover:bg-red-500/5 hover:text-red-400"
                             >
                                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -155,7 +207,7 @@ function Dashboard() {
                                 </svg>
                             </button>
 
-                            {/* Album Icon framing placeholder layout asset */}
+                            {/* Album Icon */}
                             <div className="w-10 h-10 rounded-xl bg-zinc-950 border border-zinc-900 flex items-center justify-center text-zinc-700 mb-6 group-hover:text-violet-500/40 transition-colors">
                                 <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                             </div>
@@ -170,7 +222,7 @@ function Dashboard() {
                                 </h2>
                             </div>
 
-                            {/* Bottom Controls / Metrics details layout pane */}
+                            {/* Bottom Controls */}
                             <div className="space-y-3 mt-8 border-t border-zinc-900/60 pt-4">
                                 <div className="flex items-center justify-between">
                                     <span className="font-mono text-[10px] text-zinc-600 group-hover:text-zinc-500 transition-colors">

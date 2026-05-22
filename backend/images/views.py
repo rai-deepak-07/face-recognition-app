@@ -1,18 +1,25 @@
-from rest_framework import generics
+import threading
+
+from rest_framework.views import (
+    APIView
+)
 
 from rest_framework.permissions import (
     IsAuthenticated
-)
-
-from rest_framework.exceptions import (
-    PermissionDenied
 )
 
 from rest_framework.response import (
     Response
 )
 
-from rest_framework import status
+from rest_framework import (
+    status,
+    generics
+)
+
+from rest_framework.exceptions import (
+    PermissionDenied
+)
 
 from albums.models import Album
 
@@ -25,24 +32,17 @@ from recognition.services.face_service import (
 )
 
 
-class ImageUploadView(
-    generics.CreateAPIView
-):
-
-    serializer_class = ImageSerializer
+class ImageUploadView(APIView):
 
     permission_classes = [
         IsAuthenticated
     ]
 
-    def perform_create(
+    def post(
         self,
-        serializer
+        request,
+        album_id
     ):
-
-        album_id = self.kwargs[
-            "album_id"
-        ]
 
         try:
 
@@ -50,7 +50,7 @@ class ImageUploadView(
 
                 id=album_id,
 
-                user=self.request.user
+                user=request.user
             )
 
         except Album.DoesNotExist:
@@ -59,50 +59,70 @@ class ImageUploadView(
                 "Album not found"
             )
 
-        image = serializer.save(
-            album=album
+        files = request.FILES.getlist(
+            "images"
         )
 
-        face_count = process_image_faces(
-            image
-        )
+        if not files:
 
-        self._face_count = face_count
+            return Response({
 
-    def create(
-        self,
-        request,
-        *args,
-        **kwargs
-    ):
+                "error":
+                "No images selected"
 
-        serializer = self.get_serializer(
-            data=request.data
-        )
+            }, status=400)
 
-        serializer.is_valid(
-            raise_exception=True
-        )
+        # MAX 10 IMAGES
+        if len(files) > 10:
 
-        self.perform_create(
-            serializer
-        )
+            return Response({
+                "error":
+                "Maximum 10 images allowed"
+            }, status=400)
 
-        data = serializer.data
+        uploaded_images = []
 
-        data["face_count"] = getattr(
-            self,
-            "_face_count",
-            0
-        )
+        for file in files:
+
+            image = Image.objects.create(
+                album=album,
+                image=file
+            )
+
+            # BACKGROUND THREAD
+            threading.Thread(
+                target=process_image_faces,
+                args=(image,),
+                daemon=True
+            ).start()
+
+            uploaded_images.append({
+
+                "id":
+                image.id,
+
+                "image":
+                image.image.url,
+
+                "status":
+                "processing"
+            })
 
         return Response(
-            data,
+
+            uploaded_images,
+
             status=status.HTTP_201_CREATED
         )
-class AlbumImagesView(generics.ListAPIView):
 
-    serializer_class = ImageSerializer
+
+class AlbumImagesView(
+    generics.ListAPIView
+):
+
+    serializer_class = (
+        ImageSerializer
+    )
 
     permission_classes = [
         IsAuthenticated
@@ -127,7 +147,9 @@ class ImageDeleteView(
     generics.DestroyAPIView
 ):
 
-    serializer_class = ImageSerializer
+    serializer_class = (
+        ImageSerializer
+    )
 
     permission_classes = [
         IsAuthenticated

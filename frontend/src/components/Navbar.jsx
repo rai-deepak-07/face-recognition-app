@@ -15,7 +15,7 @@ function Navbar() {
     // bg-black | border-zinc-900 | text-amber-500
 
     <nav className="sticky top-0 z-50 border-b border-zinc-900 bg-black text-zinc-100 px-4 py-3.5">
-      <div className="max-w-xl mx-auto flex items-center justify-between">
+      <div className="max-w-screen-xl mx-auto flex items-center justify-between">
 
         <Link to="/">
           <div className="flex items-center gap-2 cursor-pointer group">
